@@ -79,7 +79,11 @@ end
 ---把完全相同的表连接到同一个引用上
 ---@param info minitable.info
 local function miniBySameTable(info)
+    local tokenCache = {}
     local function makeToken(i)
+        if tokenCache[i] then
+            return tokenCache[i]
+        end
         local keys = info.keys[i]
         local cvs  = info.cvs[i]
         local tvs  = info.tvs[i]
@@ -93,28 +97,42 @@ local function miniBySameTable(info)
                 buf[#buf+1] = tostring(cvs[x])
             end
         end
-        return table.concat(buf)
+        tokenCache[i] = table.concat(buf)
+        return tokenCache[i]
     end
 
     -- 找出完全相同的对象
-    local tokens = {}
-    local links  = {}
-    for i = 1, #info.refers do
-        local token = makeToken(i)
-        if tokens[token] then
-            links[i] = tokens[token]
-            info.keys[i] = {}
-            info.cvs[i]  = nil
-            info.tvs[i]  = nil
-        else
-            tokens[token] = i
+    for _ = 1, 1000 do
+        local tokens = {}
+        local links  = {}
+        for i = 1, #info.refers do
+            local token = makeToken(i)
+            if token ~= '' then
+                if tokens[token] then
+                    links[i] = tokens[token]
+                    info.keys[i] = {}
+                    info.cvs[i]  = nil
+                    info.tvs[i]  = nil
+                    tokenCache[i] = ''
+                else
+                    tokens[token] = i
+                end
+            end
         end
-    end
-    -- 遍历tvs，把引用改过去
-    for _, tvs in pairs(info.tvs) do
-        for k, i in pairs(tvs) do
-            if links[i] then
-                tvs[k] = links[i]
+
+        if not next(links) then
+            break
+        end
+
+        --print('第', _, '次', next(links))
+
+        -- 遍历tvs，把引用改过去
+        for i, tvs in pairs(info.tvs) do
+            for k, j in pairs(tvs) do
+                if links[j] then
+                    tvs[k] = links[j]
+                    tokenCache[i] = nil
+                end
             end
         end
     end
