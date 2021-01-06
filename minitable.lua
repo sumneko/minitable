@@ -85,6 +85,9 @@ local function miniBySameTable(info)
             return tokenCache[i]
         end
         local keys = info.keys[i]
+        if not keys then
+            return ''
+        end
         local cvs  = info.cvs[i]
         local tvs  = info.tvs[i]
         local buf  = {}
@@ -110,7 +113,7 @@ local function miniBySameTable(info)
             if token ~= '' then
                 if tokens[token] then
                     links[i] = tokens[token]
-                    info.keys[i] = {}
+                    info.keys[i] = nil
                     info.cvs[i]  = nil
                     info.tvs[i]  = nil
                     tokenCache[i] = ''
@@ -161,17 +164,25 @@ function m.build(info)
     for i in ipairs(info.refers) do
         local t    = tables[i]
         local keys = info.keys[i]
-        local cvs  = info.cvs[i]
-        local tvs  = info.tvs[i]
-        for x, k in ipairs(keys) do
-            if tvs and tvs[x] then
-                t[k] = tables[tvs[x]]
-            elseif cvs then
-                t[k] = cvs[x]
+        if keys then
+            local cvs  = info.cvs[i]
+            local tvs  = info.tvs[i]
+            for x, k in ipairs(keys) do
+                if tvs and tvs[x] then
+                    t[k] = tables[tvs[x]]
+                elseif cvs then
+                    t[k] = cvs[x]
+                end
             end
         end
     end
     return tables[1]
+end
+
+---通过表的信息构生成一段代码，执行这段代码可以构建回表
+---@param info minitable.info
+function m.dump(info)
+
 end
 
 return m
