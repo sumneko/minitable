@@ -78,7 +78,11 @@ end
 
 local script = mini.dump(info)
 util.saveFile('temp/dump', script)
+local clock8 = os.clock()
+print('Load Table前', clock8)
 local new2 = assert(load(script))()
+local clock9 = os.clock()
+print('Load Table后', clock9)
 
 if not util.equal(tables, new2) then
     print('不相等 #2！')
@@ -86,6 +90,8 @@ if not util.equal(tables, new2) then
     util.saveFile('temp/b', util.dump(new2))
 end
 
+script = nil
+new = nil
 tables = nil
 info = nil
 collectgarbage()

@@ -1,5 +1,31 @@
 local m = {}
 
+local inf          = 1 / 0
+local nan          = 0 / 0
+
+local function isInteger(n)
+    if math.type then
+        return math.type(n) == 'integer'
+    else
+        return type(n) == 'number' and n % 1 == 0
+    end
+end
+
+local function formatNumber(n)
+    if n == inf
+    or n == -inf
+    or n == nan
+    or n ~= n then -- IEEE 标准中，NAN 不等于自己。但是某些实现中没有遵守这个规则
+        return ('%q'):format(n)
+    end
+    if isInteger == 'integer' then
+        return tostring(n)
+    end
+    local str = ('%.10f'):format(n)
+    str = str:gsub('%.?0*$', '')
+    return str
+end
+
 local function compareCheat()
     local oldMT = debug.getmetatable('')
     debug.setmetatable('', {
@@ -20,16 +46,24 @@ local function compareCheat()
     end})
 end
 
-local function formatKey(key)
+local function formatKey(key, needDot)
     if type(key) == 'string' and key:match '^[%a_][%w_]*$' then
-        return key
+        if needDot then
+            return '.' .. key
+        else
+            return key
+        end
     else
         return ('[%q]'):format(key)
     end
 end
 
 local function formatValue(value)
-    return ('%q'):format(value)
+    if type(value) == 'number' then
+        return formatNumber(value)
+    else
+        return ('%q'):format(value)
+    end
 end
 
 local TAB = setmetatable({}, {__index = function (self, i)
@@ -226,7 +260,7 @@ function m.dump(info)
     local function buildRefers(tab)
         local lines = {}
         lines[#lines+1] = 'local refers = {'
-        for i, refer in ipairs(info.refers) do
+        for i in ipairs(info.refers) do
             if info.keys[i] then
                 lines[#lines+1] = ('%s[%d] = %s,'):format(TAB[tab + 4], i, buildCommon(tab + 4, i))
             end
@@ -235,8 +269,27 @@ function m.dump(info)
         return table.concat(lines, '\n')
     end
 
+    local function buildLinks(tab)
+        local lines = {}
+
+        for i in ipairs(info.refers) do
+            local keys = info.keys[i]
+            local tvs  = info.tvs[i]
+            if keys and tvs then
+                for j, k in ipairs(keys) do
+                    if tvs[j] then
+                        lines[#lines+1] = ('refers[%d]%s = refers[%d]'):format(i, formatKey(k, true), formatValue(tvs[j]))
+                    end
+                end
+            end
+        end
+
+        return table.concat(lines, '\n')
+    end
+
     local lines = {}
     lines[#lines+1] = buildRefers(0)
+    lines[#lines+1] = buildLinks(0)
     lines[#lines+1] = 'return refers[1]'
     return table.concat(lines, '\n')
 end
