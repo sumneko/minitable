@@ -20,7 +20,11 @@ local function compareCheat()
     end})
 end
 
+---创建表的信息
+---@param t table
+---@return minitable.info
 local function makeMiniInfo(t)
+    ---@class minitable.info
     local info = {
         keys   = {},
         cvs    = {},
@@ -59,12 +63,12 @@ local function makeMiniInfo(t)
                     queue[#queue+1] = v
                     info.refers[index] = v
                 end
-                info.tvs[myIndex][k] = mark[v]
+                info.tvs[myIndex][i] = mark[v]
             else
                 if not info.cvs[myIndex] then
                     info.cvs[myIndex] = {}
                 end
-                info.cvs[myIndex][k] = v
+                info.cvs[myIndex][i] = v
             end
         end
     end
@@ -76,12 +80,39 @@ local function miniBySameTable()
 
 end
 
+---尝试压缩一张表（内存方面）
+---@param t     table
+---@param level integer --压缩等级
+---@return minitable.info
 function m.mini(t, level)
     local release <close> = compareCheat()
     local info = makeMiniInfo(t)
     if level >= 1 then
     end
     return info
+end
+
+---通过表的信息构建回表
+---@param info minitable.info
+function m.build(info)
+    local tables = {}
+    for i = 1, #info.refers do
+        tables[i] = {}
+    end
+    for i in ipairs(info.refers) do
+        local t    = tables[i]
+        local keys = info.keys[i]
+        local cvs  = info.cvs[i]
+        local tvs  = info.tvs[i]
+        for x, k in ipairs(keys) do
+            if tvs and tvs[x] then
+                t[k] = tables[tvs[x]]
+            else
+                t[k] = cvs[x]
+            end
+        end
+    end
+    return tables[1]
 end
 
 return m

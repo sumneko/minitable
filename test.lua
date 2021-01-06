@@ -1,6 +1,7 @@
 local fsu  = require 'fs-utility'
 local fs   = require 'bee.filesystem'
 local mini = require 'minitable'
+local util = require 'utility'
 
 local tablePath = fs.path [[C:\W3-Server\local-resource\table\Data]]
 
@@ -60,3 +61,16 @@ collectgarbage()
 collectgarbage()
 local mem6   = collectgarbage 'count'
 print('mini1后', clock6, mem6)
+
+local new = mini.build(info)
+local clock7 = os.clock()
+collectgarbage()
+collectgarbage()
+local mem7   = collectgarbage 'count'
+print('build后', clock7, mem7)
+
+if not util.equal(tables, new) then
+    print('不相等！')
+    util.saveFile('temp/a', util.dump(tables))
+    util.saveFile('temp/b', util.dump(new))
+end
