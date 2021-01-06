@@ -55,7 +55,6 @@ local mem5   = collectgarbage 'count'
 print('设置空表后', clock5, mem5)
 
 local info = mini.mini(tables, 0)
-tables = nil
 local clock6 = os.clock()
 collectgarbage()
 collectgarbage()
