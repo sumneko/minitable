@@ -71,9 +71,19 @@ local mem7   = collectgarbage 'count'
 print('build后', clock7, mem7)
 
 if not util.equal(tables, new) then
-    print('不相等！')
+    print('不相等 #1！')
     util.saveFile('temp/a', util.dump(tables))
     util.saveFile('temp/b', util.dump(new))
+end
+
+local script = mini.dump(info)
+util.saveFile('temp/dump', script)
+local new2 = assert(load(script))()
+
+if not util.equal(tables, new2) then
+    print('不相等 #2！')
+    util.saveFile('temp/a', util.dump(tables))
+    util.saveFile('temp/b', util.dump(new2))
 end
 
 tables = nil

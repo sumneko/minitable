@@ -20,6 +20,23 @@ local function compareCheat()
     end})
 end
 
+local function formatKey(key)
+    if type(key) == 'string' and key:match '^[%a_][%w_]*$' then
+        return key
+    else
+        return ('[%q]'):format(key)
+    end
+end
+
+local function formatValue(value)
+    return ('%q'):format(value)
+end
+
+local TAB = setmetatable({}, {__index = function (self, i)
+    self[i] = (' '):rep(i)
+    return self[i]
+end})
+
 ---创建表的信息
 ---@param t table
 ---@return minitable.info
@@ -182,7 +199,46 @@ end
 ---通过表的信息构生成一段代码，执行这段代码可以构建回表
 ---@param info minitable.info
 function m.dump(info)
+    local function buildCommon(tab, index)
+        local keys = info.keys[index]
+        if not keys then
+            return nil
+        end
+        local lines = {}
+        local cvs = info.cvs[index]
+        if not cvs then
+            return '{}'
+        end
+        for i, k in ipairs(keys) do
+            if cvs[i] ~= nil then
+                lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(cvs[i]))
+            end
+        end
+        if #lines == 0 then
+            return '{}'
+        else
+            table.insert(lines, 1, '{')
+            lines[#lines+1] = ('%s}'):format(TAB[tab])
+            return table.concat(lines, '\n')
+        end
+    end
 
+    local function buildRefers(tab)
+        local lines = {}
+        lines[#lines+1] = 'local refers = {'
+        for i, refer in ipairs(info.refers) do
+            if info.keys[i] then
+                lines[#lines+1] = ('%s[%d] = %s,'):format(TAB[tab + 4], i, buildCommon(tab + 4, i))
+            end
+        end
+        lines[#lines+1] = '}'
+        return table.concat(lines, '\n')
+    end
+
+    local lines = {}
+    lines[#lines+1] = buildRefers(0)
+    lines[#lines+1] = 'return refers[1]'
+    return table.concat(lines, '\n')
 end
 
 return m
