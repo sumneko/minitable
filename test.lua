@@ -47,30 +47,6 @@ local clock3 = os.clock()
 local mem3   = collectgarbage 'count'
 print(clock3, mem3)
 
-local EMPTY_TABLE = {}
-
-local emptyCount = 0
-local queue = {}
-queue[1] = tables
-while #queue > 0 do
-    local t = queue[#queue]
-    queue[#queue] = nil
-    for k, v in pairs(t) do
-        if type(v) == 'table' then
-            if next(v) then
-                queue[#queue+1] = v
-            else
-                t[k] = EMPTY_TABLE
-                emptyCount = emptyCount + 1
-            end
-        end
-    end
-end
-print(emptyCount)
-local clock4 = os.clock()
-local mem4   = collectgarbage 'count'
-print(clock4, mem4)
-
 collectgarbage()
 collectgarbage()
 
