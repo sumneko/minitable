@@ -53,9 +53,9 @@ collectgarbage()
 
 local clock5 = os.clock()
 local mem5   = collectgarbage 'count'
-print('设置空表后', clock5, mem5)
+print(clock5, mem5)
 
-local info = mini.mini(tables, 0)
+local info = mini.mini(tables, 1)
 local clock6 = os.clock()
 collectgarbage()
 collectgarbage()
@@ -63,6 +63,7 @@ local mem6   = collectgarbage 'count'
 print('mini1后', clock6, mem6)
 
 local new = mini.build(info)
+print(collectgarbage 'count')
 local clock7 = os.clock()
 collectgarbage()
 collectgarbage()
@@ -74,3 +75,10 @@ if not util.equal(tables, new) then
     util.saveFile('temp/a', util.dump(tables))
     util.saveFile('temp/b', util.dump(new))
 end
+
+tables = nil
+info = nil
+collectgarbage()
+collectgarbage()
+local mem999 = collectgarbage 'count'
+print('最终内存：', mem999)

@@ -76,8 +76,48 @@ local function makeMiniInfo(t)
     return info
 end
 
-local function miniBySameTable()
+---把完全相同的表连接到同一个引用上
+---@param info minitable.info
+local function miniBySameTable(info)
+    local function makeToken(i)
+        local keys = info.keys[i]
+        local cvs  = info.cvs[i]
+        local tvs  = info.tvs[i]
+        local buf  = {}
+        for x, k in ipairs(keys) do
+            buf[#buf+1] = k
+            if tvs and tvs[x] then
+                buf[#buf+1] = tvs[x]
+            elseif cvs then
+                buf[#buf+1] = type(cvs[x])
+                buf[#buf+1] = tostring(cvs[x])
+            end
+        end
+        return table.concat(buf)
+    end
 
+    -- 找出完全相同的对象
+    local tokens = {}
+    local links  = {}
+    for i = 1, #info.refers do
+        local token = makeToken(i)
+        if tokens[token] then
+            links[i] = tokens[token]
+            info.keys[i] = {}
+            info.cvs[i]  = nil
+            info.tvs[i]  = nil
+        else
+            tokens[token] = i
+        end
+    end
+    -- 遍历tvs，把引用改过去
+    for _, tvs in pairs(info.tvs) do
+        for k, i in pairs(tvs) do
+            if links[i] then
+                tvs[k] = links[i]
+            end
+        end
+    end
 end
 
 ---尝试压缩一张表（内存方面）
@@ -88,6 +128,7 @@ function m.mini(t, level)
     local release <close> = compareCheat()
     local info = makeMiniInfo(t)
     if level >= 1 then
+        miniBySameTable(info)
     end
     return info
 end
@@ -107,7 +148,7 @@ function m.build(info)
         for x, k in ipairs(keys) do
             if tvs and tvs[x] then
                 t[k] = tables[tvs[x]]
-            else
+            elseif cvs then
                 t[k] = cvs[x]
             end
         end
