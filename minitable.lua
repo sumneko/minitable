@@ -62,36 +62,45 @@ local function makeMiniInfo(t)
         refmap = {},
         protos = {},
     }
-    local queue = {t}
-    local index = 1
-    info.refmap[t] = index
+    local queue  = {t}
+    local index  = 0
+
+    local function makeValues(ot)
+        index = index + 1
+        local values = {}
+        info.refmap[ot] = index
+        info.values[index] = values
+        info.refmap[values] = index
+    end
+
+    makeValues(t)
+
     while #queue > 0 do
         local current = queue[#queue]
         queue[#queue] = nil
 
         -- 把对象的所有 key 都找出，并按照固定顺序来保存
         local myIndex = info.refmap[current]
-        local keys   = {}
-        local values = {}
+        local keys    = {}
+        local values  = info.values[myIndex]
         for k in pairs(current) do
             keys[#keys+1] = k
         end
         table.sort(keys)
         info.keys[myIndex] = keys
-        info.values[myIndex] = values
-        info.refmap[values] = myIndex
 
         -- 以key的顺序来遍历值
         for i = 1, #keys do
             local k = keys[i]
             local v = current[k]
-            values[k] = v
             if type(v) == 'table' then
                 if not info.refmap[v] then
-                    index = index + 1
-                    info.refmap[v] = index
+                    makeValues(v)
                     queue[#queue+1] = v
                 end
+                values[k] = info.values[info.refmap[v]]
+            else
+                values[k] = v
             end
         end
     end
