@@ -244,9 +244,11 @@ local function miniBySameTemplate(info)
 
             for _, ci in ipairs(protos) do
                 local cvalues = info.values[ci]
-                for i, k in ipairs(keys) do
-                    if tvalues[k] == cvalues[k] then
-                        cvalues[k] = nil
+                if cvalues ~= protos.template then
+                    for i, k in ipairs(keys) do
+                        if tvalues[k] == cvalues[k] then
+                            cvalues[k] = nil
+                        end
                     end
                 end
             end
@@ -290,7 +292,9 @@ function m.build(info)
             }
             for _, ci in ipairs(proto) do
                 local values = info.values[ci]
-                setmetatable(values, mt)
+                if template ~= values then
+                    setmetatable(values, mt)
+                end
             end
         end
     end
@@ -391,7 +395,7 @@ function m.dump(info)
         lines[#lines+1] = 'local protos = {'
 
         for i, proto in ipairs(info.protos) do
-            if proto.template then
+            if proto.template and info.values[proto] ~= proto.template then
                 lines[#lines+1] = ('%s[%s] = %s,'):format(TAB[tab + 4], i, buildTemplate(tab + 4, proto))
             end
         end
@@ -421,7 +425,9 @@ mt = {
     end,
 }]]):format(i, #proto.template, i)
                 for _, ci in ipairs(proto) do
-                    lines[#lines+1] = ('setmetatable(refers[%d], mt)'):format(ci)
+                    if proto.template ~= info.values[ci] then
+                        lines[#lines+1] = ('setmetatable(refers[%d], mt)'):format(ci)
+                    end
                 end
             end
         end
