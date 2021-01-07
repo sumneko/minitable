@@ -24,7 +24,11 @@ local tables = {}
 local listfile = dofile((tablePath / 'listfile.lua'):string())
 for _, fileName in ipairs(listfile) do
     local path = tablePath / fileName
-    tables[#tables+1] = dofile(path:string())
+    if fileName:find('grass', 1, true) then
+        print('忽略文件：', fileName)
+    else
+        tables[#tables+1] = dofile(path:string())
+    end
 end
 
 local clock2 = os.clock()
