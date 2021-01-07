@@ -358,10 +358,84 @@ function m.dump(info)
         return table.concat(lines, '\n')
     end
 
+    local function buildTemplate(tab, proto)
+        local keys = info.keys[proto[1]]
+        if not keys then
+            return nil
+        end
+        local template = proto.template
+        local lines = {}
+        for _, k in ipairs(keys) do
+            local v = template[k]
+            if info.refmap[v] then
+                lines[#lines+1] = ('%s%s = refers[%d],'):format(TAB[tab + 4], formatKey(k), info.refmap[v])
+            else
+                lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(v))
+            end
+        end
+        if #lines == 0 then
+            return '{}'
+        else
+            table.insert(lines, 1, '{')
+            lines[#lines+1] = ('%s}'):format(TAB[tab])
+            return table.concat(lines, '\n')
+        end
+    end
+
+    local function buildProtos(tab)
+        if #info.protos == 0 then
+            return nil
+        end
+        local lines = {}
+
+        lines[#lines+1] = 'local protos = {'
+
+        for i, proto in ipairs(info.protos) do
+            if proto.template then
+                lines[#lines+1] = ('%s[%s] = %s,'):format(TAB[tab + 4], i, buildTemplate(tab + 4, proto))
+            end
+        end
+
+        lines[#lines+1] = '}'
+
+        return table.concat(lines, '\n')
+    end
+
+    local function buildMetaTable(tab)
+        local lines = {}
+
+        lines[#lines+1] = 'local mt'
+        for i, proto in ipairs(info.protos) do
+            if proto.template then
+                lines[#lines+1] = ([[
+mt = {
+    __index = protos[%d],
+    __len   = function ()
+        return %d
+    end,
+    __pairs = function (self)
+        return function (t, k)
+            local nk = next(protos[%d], k)
+            return nk, t[nk]
+        end, self, nil
+    end,
+}]]):format(i, #proto.template, i)
+                for _, ci in ipairs(proto) do
+                    lines[#lines+1] = ('setmetatable(refers[%d], mt)'):format(ci)
+                end
+            end
+        end
+
+        return table.concat(lines, '\n')
+    end
+
     local lines = {}
     lines[#lines+1] = buildRefers(0)
     lines[#lines+1] = buildLinks(0)
+    lines[#lines+1] = buildProtos(0)
+    lines[#lines+1] = buildMetaTable(0)
     lines[#lines+1] = 'return refers[1]'
+    lines[#lines+1] = ''
     return table.concat(lines, '\n')
 end
 

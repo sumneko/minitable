@@ -20,6 +20,7 @@ local mathHuge     = math.huge
 local inf          = 1 / 0
 local nan          = 0 / 0
 local utf8         = utf8
+local error        = error
 
 _ENV = nil
 
@@ -186,6 +187,7 @@ function m.equal(a, b)
     local tp1 = type(a)
     local tp2 = type(b)
     if tp1 ~= tp2 then
+        error(1)
         return false
     end
     if tp1 == 'table' then
@@ -194,11 +196,13 @@ function m.equal(a, b)
             mark[k] = true
             local res = m.equal(v, b[k])
             if not res then
+                error(1)
                 return false
             end
         end
         for k in pairs(b) do
             if not mark[k] then
+                error(1)
                 return false
             end
         end

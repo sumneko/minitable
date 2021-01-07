@@ -74,6 +74,14 @@ collectgarbage()
 local mem6   = collectgarbage 'count'
 print('mini1后', clock6, mem6)
 
+local script = mini.dump(info)
+util.saveFile('temp/dump', script)
+local clock8 = os.clock()
+print('Load Table前', clock8)
+local new2 = assert(load(script))()
+local clock9 = os.clock()
+print('Load Table后', clock9)
+
 local new = mini.build(info)
 print(collectgarbage 'count')
 local clock7 = os.clock()
@@ -91,14 +99,6 @@ if not util.equal(new, tables) then
     print('不相等 #12！')
 end
 
-local script = mini.dump(info)
-util.saveFile('temp/dump', script)
-local clock8 = os.clock()
-print('Load Table前', clock8)
-local new2 = assert(load(script))()
-local clock9 = os.clock()
-print('Load Table后', clock9)
-
 if not util.equal(tables, new2) then
     print('不相等 #21！')
     --util.saveFile('temp/a', util.dump(tables))
@@ -109,10 +109,10 @@ if not util.equal(new2, tables) then
 end
 
 if not util.equal(new, new2) then
-    print('不相等 #31')
+    print('不相等 #31!')
 end
 if not util.equal(new2, new) then
-    print('不相等 #32')
+    print('不相等 #32!')
 end
 
 script = nil
