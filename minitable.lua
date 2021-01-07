@@ -272,6 +272,28 @@ end
 ---通过表的信息构建回表
 ---@param info minitable.info
 function m.build(info)
+    for _, proto in ipairs(info.protos) do
+        local template = proto.template
+        if template then
+            local len = #template
+            local mt = {
+                __index  = template,
+                __len    = function ()
+                    return len
+                end,
+                __pairs  = function (self)
+                    return function (t, k)
+                        local nk = next(template, k)
+                        return nk, t[nk]
+                    end, self, nil
+                end,
+            }
+            for _, ci in ipairs(proto) do
+                local values = info.values[ci]
+                setmetatable(values, mt)
+            end
+        end
+    end
     return info.values[1]
 end
 
