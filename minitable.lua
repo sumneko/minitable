@@ -180,13 +180,9 @@ local function miniBySameTemplate(info)
 
     local function makeBestTemplate(protos)
         local ti = protos[1]
-        local t  = {}
         local keys   = info.keys[ti]
         local values = info.values[ti]
-        for i, k in ipairs(keys) do
-            t[k] = values[i]
-        end
-        return t, keys
+        return keys, values
     end
 
     -- 找出使用同一个meta的对象
@@ -206,22 +202,15 @@ local function miniBySameTemplate(info)
     for _, protos in ipairs(info.protos) do
         if #protos > 1 then
             -- TODO 目前先假定第一个对象是模板
-            local template, keys = makeBestTemplate(protos)
+            local keys, tvalues = makeBestTemplate(protos)
 
-            protos.template = template
+            protos.template = tvalues
 
             for _, ci in ipairs(protos) do
-                if ti ~= ci then
-                    for i, k in ipairs(keys) do
-                        if ttvs then
-                            if tvs and ttvs[i] == tvs[i] then
-                                tvs[i] = nil
-                            end
-                        else
-                            if cvs and tcvs[i] == cvs[i] then
-                                cvs[i] = nil
-                            end
-                        end
+                local cvalues = info.values[ci]
+                for i, k in ipairs(keys) do
+                    if tvalues[k] == cvalues[k] then
+                        cvalues[k] = nil
                     end
                 end
             end
@@ -294,10 +283,14 @@ function m.dump(info)
             local keys   = info.keys[i]
             local values = info.values[i]
             if keys then
-                lines[#lines+1] = ('current = refers[%d]'):format(i)
+                local hasCurrent
                 for j, k in ipairs(keys) do
                     local v = values[k]
                     if info.refmap[v] then
+                        if not hasCurrent then
+                            hasCurrent = true
+                            lines[#lines+1] = ('current = refers[%d]'):format(i)
+                        end
                         lines[#lines+1] = ('current%s = refers[%d]'):format(formatKey(k, true), formatValue(info.refmap[v]))
                     end
                 end
