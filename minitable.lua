@@ -205,7 +205,7 @@ local function miniBySameTemplate(info)
         return ck
     end
 
-    local function makeBestTemplate(protos)
+    local function makeGoodTemplate(protos)
         local template = {}
         local keys   = info.keys[protos[1]]
         for _, k in ipairs(keys) do
@@ -238,7 +238,7 @@ local function miniBySameTemplate(info)
     -- 清理差异数据
     for _, protos in ipairs(info.protos) do
         if #protos > 1 then
-            local keys, tvalues = makeBestTemplate(protos)
+            local keys, tvalues = makeGoodTemplate(protos)
 
             protos.template = tvalues
 
