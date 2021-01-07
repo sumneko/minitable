@@ -26,26 +26,6 @@ local function formatNumber(n)
     return str
 end
 
-local function compareCheat()
-    local oldMT = debug.getmetatable('')
-    debug.setmetatable('', {
-        __lt = function (a, b)
-            local tpa = type(a)
-            local tpb = type(b)
-            if tpa == 'number' then
-                return true
-            end
-            if tpb == 'number' then
-                return false
-            end
-            return false
-        end,
-    })
-    return setmetatable({}, { __close = function ()
-        debug.setmetatable('', oldMT)
-    end})
-end
-
 local function formatKey(key, needDot)
     if type(key) == 'string' and key:match '^[%a_][%w_]*$' then
         if needDot then
@@ -228,7 +208,6 @@ end
 ---@param level integer --压缩等级
 ---@return minitable.info
 function m.mini(t, level)
-    local release <close> = compareCheat()
     local info = makeMiniInfo(t)
     if level >= 1 then
         miniBySameTable(info)

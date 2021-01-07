@@ -3,6 +3,18 @@ local fs   = require 'bee.filesystem'
 local mini = require 'minitable'
 local util = require 'utility'
 
+debug.getmetatable('').__lt = function (a, b)
+    local tpa = type(a)
+    local tpb = type(b)
+    if tpa == 'number' then
+        return true
+    end
+    if tpb == 'number' then
+        return false
+    end
+    return false
+end
+
 local tablePath = fs.path [[C:\W3-Server\local-resource\table\Data]]
 
 local clock1 = os.clock()
