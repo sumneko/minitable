@@ -15,40 +15,16 @@ debug.getmetatable('').__lt = function (a, b)
     return false
 end
 
-local tablePath = fs.path [[C:\W3-Server\local-resource\table\Data]]
+local tablePath = fs.path [[C:\W3-Server\local-resource\table]]
 
 local clock1 = os.clock()
 local mem1   = collectgarbage 'count'
 print(clock1, mem1)
 local tables = {}
-local dirMems = {}
-for dir in tablePath:list_directory() do
-    if fs.is_directory(dir) then
-        collectgarbage()
-        collectgarbage()
-        local startMem = collectgarbage 'count'
-        fsu.scanDirectory(dir, function (path)
-            local text = fsu.loadFile(path)
-            local f = load(text)
-            local t = f()
-            tables[#tables+1] = t
-        end)
-        collectgarbage()
-        collectgarbage()
-        local finishMem = collectgarbage 'count'
-        dirMems[#dirMems+1] = {finishMem - startMem, dir}
-    else
-        local text = fsu.loadFile(dir)
-        local f = load(text)
-        local t = f()
-        tables[#tables+1] = t
-    end
-end
-table.sort(dirMems, function (a, b)
-    return a[1] > b[1]
-end)
-for _, data in ipairs(dirMems) do
-    --print(data[1], data[2])
+local listfile = dofile((tablePath / 'listfile.lua'):string())
+for _, fileName in ipairs(listfile) do
+    local path = tablePath / fileName
+    tables[#tables+1] = dofile(path:string())
 end
 
 local clock2 = os.clock()
