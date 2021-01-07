@@ -178,11 +178,42 @@ local function miniBySameTemplate(info)
         return table.concat(keys)
     end
 
+    ---从投票中获取票数最高的值，使用稳定的冒泡
+    ---@param votes table
+    local function getBestValueByVotes(votes)
+        local keys = {}
+        for k in pairs(votes) do
+            keys[#keys+1] = k
+        end
+        table.sort(keys, function (a, b)
+            return tostring(a) < tostring(b)
+        end)
+        local ck
+        local cv = 0
+        for _, k in ipairs(keys) do
+            if votes[k] > cv then
+                cv = votes[k]
+                ck = k
+            end
+        end
+        return ck
+    end
+
     local function makeBestTemplate(protos)
-        local ti = protos[1]
-        local keys   = info.keys[ti]
-        local values = info.values[ti]
-        return keys, values
+        local template = {}
+        local keys   = info.keys[protos[1]]
+        for _, k in ipairs(keys) do
+            -- 找一个最好的值
+            local votes = {}
+            for _, ci in ipairs(protos) do
+                local values = info.values[ci]
+                local v = values[k]
+                votes[v] = (votes[v] or 0) + 1
+            end
+            local bestValue = getBestValueByVotes(votes)
+            template[k] = bestValue
+        end
+        return keys, template
     end
 
     -- 找出使用同一个meta的对象
@@ -201,7 +232,6 @@ local function miniBySameTemplate(info)
     -- 清理差异数据
     for _, protos in ipairs(info.protos) do
         if #protos > 1 then
-            -- TODO 目前先假定第一个对象是模板
             local keys, tvalues = makeBestTemplate(protos)
 
             protos.template = tvalues
@@ -251,7 +281,7 @@ function m.dump(info)
         local values = info.values[index]
         for i, k in ipairs(keys) do
             local v = values[k]
-            if not info.refmap[v] then
+            if v ~= nil and not info.refmap[v] then
                 lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(v))
             end
         end
