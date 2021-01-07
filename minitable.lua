@@ -184,6 +184,10 @@ local function miniBySameTemplate(info)
         return table.concat(keys)
     end
 
+    local function makeBestTemplate(protos)
+        
+    end
+
     -- 找出使用同一个meta的对象
     local metas = {}
     for i = 1, #info.refers do
@@ -198,8 +202,35 @@ local function miniBySameTemplate(info)
     end
 
     -- 清理差异数据
-    for _, proto in ipairs(info.protos) do
-        -- TODO
+    for _, protos in ipairs(info.protos) do
+        if #protos > 1 then
+            -- TODO 目前先假定第一个对象是模板
+            local template = makeBestTemplate(protos)
+            local ti = protos[1]
+
+            protos.template = ti
+            local keys = info.keys[ti]
+            local tcvs = info.cvs[ti]
+            local ttvs = info.tvs[ti]
+
+            for _, ci in ipairs(protos) do
+                if ti ~= ci then
+                    local cvs = info.cvs[ci]
+                    local tvs = info.tvs[ci]
+                    for i, k in ipairs(keys) do
+                        if ttvs then
+                            if tvs and ttvs[i] == tvs[i] then
+                                tvs[i] = nil
+                            end
+                        else
+                            if cvs and tcvs[i] == cvs[i] then
+                                cvs[i] = nil
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
 end
 
