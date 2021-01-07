@@ -273,7 +273,7 @@ end
 
 ---通过表的信息构建回表
 ---@param info minitable.info
-function m.build(info)
+function m.rawbuild(info)
     for _, proto in ipairs(info.protos) do
         local template = proto.template
         if template then
@@ -447,6 +447,13 @@ mt = {
     lines[#lines+1] = 'return assert((loadstring or load)(dump))()'
     lines[#lines+1] = ''
     return table.concat(lines, '\n')
+end
+
+---通过表的信息构建回表
+---@param info minitable.info
+function m.build(info)
+    local dump = m.dump(info)
+    return assert((loadstring or load)(dump))()
 end
 
 return m
