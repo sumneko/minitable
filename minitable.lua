@@ -81,6 +81,7 @@ local function makeMiniInfo(t)
         cvs    = {},
         tvs    = {},
         refers = {},
+        protos = {},
     }
     local mark = {}
     local queue = {t}
@@ -192,6 +193,36 @@ local function miniBySameTable(info)
     end
 end
 
+---把相似的对象设置为共享同一个元表
+---@param info minitable.info
+local function miniBySameTemplate(info)
+    local function makeMeta(i)
+        local keys = info.keys[i]
+        if not keys then
+            return ''
+        end
+        return table.concat(keys)
+    end
+
+    -- 找出使用同一个meta的对象
+    local metas = {}
+    for i = 1, #info.refers do
+        local meta = makeMeta(i)
+        if meta ~= '' then
+            if not metas[meta] then
+                metas[meta] = {}
+                info.protos[#info.protos+1] = metas[meta]
+            end
+            metas[meta][#metas[meta]+1] = i
+        end
+    end
+
+    -- 清理差异数据
+    for _, proto in ipairs(info.protos) do
+        -- TODO
+    end
+end
+
 ---尝试压缩一张表（内存方面）
 ---@param t     table
 ---@param level integer --压缩等级
@@ -201,6 +232,9 @@ function m.mini(t, level)
     local info = makeMiniInfo(t)
     if level >= 1 then
         miniBySameTable(info)
+    end
+    if level >= 2 then
+        miniBySameTemplate(info)
     end
     return info
 end
