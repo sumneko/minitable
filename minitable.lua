@@ -86,7 +86,7 @@ local function makeMiniInfo(t)
         for i = 1, #keys do
             local k = keys[i]
             local v = current[k]
-            values[i] = v
+            values[k] = v
             if type(v) == 'table' then
                 if not info.refmap[v] then
                     index = index + 1
@@ -117,7 +117,7 @@ local function miniBySameTable(info)
         local buf  = {}
         for x, k in ipairs(keys) do
             buf[#buf+1] = k
-            local v = values[x]
+            local v = values[k]
             local ref = info.refmap[v]
             if ref then
                 buf[#buf+1] = ref
@@ -156,10 +156,10 @@ local function miniBySameTable(info)
 
         -- 遍历tvs，把引用改过去
         for i, values in pairs(info.values) do
-            for j, v in pairs(values) do
+            for k, v in pairs(values) do
                 local ref = info.refmap[v]
                 if links[ref] then
-                    values[j] = info.refers[links[ref]]
+                    values[k] = info.refers[links[ref]]
                     tokenCache[i] = nil
                 end
             end
@@ -179,7 +179,14 @@ local function miniBySameTemplate(info)
     end
 
     local function makeBestTemplate(protos)
-
+        local ti = protos[1]
+        local t  = {}
+        local keys   = info.keys[ti]
+        local values = info.values[ti]
+        for i, k in ipairs(keys) do
+            t[k] = values[i]
+        end
+        return t, keys
     end
 
     -- 找出使用同一个meta的对象
@@ -199,18 +206,12 @@ local function miniBySameTemplate(info)
     for _, protos in ipairs(info.protos) do
         if #protos > 1 then
             -- TODO 目前先假定第一个对象是模板
-            local template = makeBestTemplate(protos)
-            local ti = protos[1]
+            local template, keys = makeBestTemplate(protos)
 
-            protos.template = ti
-            local keys = info.keys[ti]
-            local tcvs = info.cvs[ti]
-            local ttvs = info.tvs[ti]
+            protos.template = template
 
             for _, ci in ipairs(protos) do
                 if ti ~= ci then
-                    local cvs = info.cvs[ci]
-                    local tvs = info.tvs[ci]
                     for i, k in ipairs(keys) do
                         if ttvs then
                             if tvs and ttvs[i] == tvs[i] then
@@ -238,7 +239,7 @@ function m.mini(t, level)
         miniBySameTable(info)
     end
     if level >= 2 then
-        --miniBySameTemplate(info)
+        miniBySameTemplate(info)
     end
     return info
 end
@@ -246,21 +247,7 @@ end
 ---通过表的信息构建回表
 ---@param info minitable.info
 function m.build(info)
-    local tables = {}
-    for i = 1, #info.refers do
-        tables[i] = {}
-    end
-    for i in ipairs(info.refers) do
-        local t    = tables[i]
-        local keys = info.keys[i]
-        if keys then
-            local values = info.values[i]
-            for x, k in ipairs(keys) do
-                t[k] = values[x]
-            end
-        end
-    end
-    return tables[1]
+    return info.values[1]
 end
 
 ---通过表的信息构生成一段代码，执行这段代码可以构建回表
@@ -274,7 +261,7 @@ function m.dump(info)
         local lines = {}
         local values = info.values[index]
         for i, k in ipairs(keys) do
-            local v = values[i]
+            local v = values[k]
             if not info.refmap[v] then
                 lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(v))
             end
@@ -309,7 +296,7 @@ function m.dump(info)
             if keys then
                 lines[#lines+1] = ('current = refers[%d]'):format(i)
                 for j, k in ipairs(keys) do
-                    local v = values[j]
+                    local v = values[k]
                     if info.refmap[v] then
                         lines[#lines+1] = ('current%s = refers[%d]'):format(formatKey(k, true), formatValue(info.refmap[v]))
                     end
