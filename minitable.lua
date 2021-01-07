@@ -284,14 +284,17 @@ function m.dump(info)
 
     local function buildLinks(tab)
         local lines = {}
-
+        lines[#lines+1] = 'local current'
         for i in ipairs(info.refers) do
             local keys = info.keys[i]
             local tvs  = info.tvs[i]
             if keys and tvs then
-                for j, k in ipairs(keys) do
-                    if tvs[j] then
-                        lines[#lines+1] = ('refers[%d]%s = refers[%d]'):format(i, formatKey(k, true), formatValue(tvs[j]))
+                if next(tvs) then
+                    lines[#lines+1] = ('current = refers[%d]'):format(i)
+                    for j, k in ipairs(keys) do
+                        if tvs[j] then
+                            lines[#lines+1] = ('current%s = refers[%d]'):format(formatKey(k, true), formatValue(tvs[j]))
+                        end
                     end
                 end
             end
