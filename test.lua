@@ -67,7 +67,7 @@ local clock5 = os.clock()
 local mem5   = collectgarbage 'count'
 print(clock5, mem5)
 
-local info = mini.mini(tables, 2)
+local info = mini.mini(tables, 1)
 local clock6 = os.clock()
 collectgarbage()
 collectgarbage()
@@ -84,13 +84,11 @@ print('build后', clock7, mem7)
 
 if not util.equal(tables, new) then
     print('不相等 #11！')
-    --util.saveFile('temp/a', util.dump(tables))
-    --util.saveFile('temp/b', util.dump(new))
+    util.saveFile('temp/a', util.dump(tables))
+    util.saveFile('temp/b', util.dump(new))
 end
 if not util.equal(new, tables) then
     print('不相等 #12！')
-    --util.saveFile('temp/a', util.dump(tables))
-    --util.saveFile('temp/b', util.dump(new))
 end
 
 local script = mini.dump(info)
@@ -103,19 +101,18 @@ print('Load Table后', clock9)
 
 if not util.equal(tables, new2) then
     print('不相等 #21！')
-    --util.saveFile('temp/a', util.dump(tables))
-    --util.saveFile('temp/b', util.dump(new2))
+    util.saveFile('temp/a', util.dump(tables))
+    util.saveFile('temp/b', util.dump(new2))
 end
 if not util.equal(new2, tables) then
     print('不相等 #22！')
-    --util.saveFile('temp/a', util.dump(tables))
-    --util.saveFile('temp/b', util.dump(new2))
 end
 
 script = nil
 new = nil
 tables = nil
 info = nil
+--new2 = nil
 collectgarbage()
 collectgarbage()
 local mem999 = collectgarbage 'count'

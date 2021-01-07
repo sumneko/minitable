@@ -60,12 +60,10 @@ local function makeMiniInfo(t)
         keys   = {},
         values = {},
         refmap = {},
-        refers = {},
         protos = {},
     }
     local queue = {t}
     local index = 1
-    info.refers[index] = t
     info.refmap[t] = index
     while #queue > 0 do
         local current = queue[#queue]
@@ -81,6 +79,7 @@ local function makeMiniInfo(t)
         table.sort(keys)
         info.keys[myIndex] = keys
         info.values[myIndex] = values
+        info.refmap[values] = myIndex
 
         -- 以key的顺序来遍历值
         for i = 1, #keys do
@@ -91,7 +90,6 @@ local function makeMiniInfo(t)
                 if not info.refmap[v] then
                     index = index + 1
                     info.refmap[v] = index
-                    info.refers[index] = v
                     queue[#queue+1] = v
                 end
             end
@@ -134,13 +132,12 @@ local function miniBySameTable(info)
     for _ = 1, 1000 do
         local tokens = {}
         local links  = {}
-        for i = 1, #info.refers do
+        for i = 1, #info.values do
             local token = makeToken(i)
             if token ~= '' then
                 if tokens[token] then
                     links[i] = tokens[token]
                     info.keys[i] = nil
-                    info.values[i]  = nil
                     tokenCache[i] = ''
                 else
                     tokens[token] = i
@@ -159,7 +156,7 @@ local function miniBySameTable(info)
             for k, v in pairs(values) do
                 local ref = info.refmap[v]
                 if links[ref] then
-                    values[k] = info.refers[links[ref]]
+                    values[k] = info.values[links[ref]]
                     tokenCache[i] = nil
                 end
             end
@@ -218,7 +215,7 @@ local function miniBySameTemplate(info)
 
     -- 找出使用同一个meta的对象
     local metas = {}
-    for i = 1, #info.refers do
+    for i = 1, #info.values do
         local meta = makeMeta(i)
         if meta ~= '' then
             if not metas[meta] then
@@ -279,7 +276,7 @@ function m.dump(info)
         end
         local lines = {}
         local values = info.values[index]
-        for i, k in ipairs(keys) do
+        for _, k in ipairs(keys) do
             local v = values[k]
             if v ~= nil and not info.refmap[v] then
                 lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(v))
@@ -297,7 +294,7 @@ function m.dump(info)
     local function buildRefers(tab)
         local lines = {}
         lines[#lines+1] = 'local refers = {'
-        for i in ipairs(info.refers) do
+        for i in ipairs(info.values) do
             if info.keys[i] then
                 lines[#lines+1] = ('%s[%d] = %s,'):format(TAB[tab + 4], i, buildCommon(tab + 4, i))
             end
@@ -309,12 +306,12 @@ function m.dump(info)
     local function buildLinks(tab)
         local lines = {}
         lines[#lines+1] = 'local current'
-        for i in ipairs(info.refers) do
+        for i in ipairs(info.values) do
             local keys   = info.keys[i]
             local values = info.values[i]
             if keys then
                 local hasCurrent
-                for j, k in ipairs(keys) do
+                for _, k in ipairs(keys) do
                     local v = values[k]
                     if info.refmap[v] then
                         if not hasCurrent then
