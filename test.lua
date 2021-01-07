@@ -120,6 +120,7 @@ tables = nil
 info = nil
 new = nil
 --new2 = nil
+
 collectgarbage()
 collectgarbage()
 local mem999 = collectgarbage 'count'

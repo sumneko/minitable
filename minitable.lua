@@ -178,8 +178,8 @@ end
 local function miniBySameTemplate(info)
     local function makeMeta(i)
         local keys = info.keys[i]
-        if not keys then
-            return ''
+        if not keys or #keys <= 3 then
+            return nil
         end
         return table.concat(keys)
     end
@@ -226,7 +226,7 @@ local function miniBySameTemplate(info)
     local metas = {}
     for i = 1, #info.values do
         local meta = makeMeta(i)
-        if meta ~= '' then
+        if meta then
             if not metas[meta] then
                 metas[meta] = {}
                 info.protos[#info.protos+1] = metas[meta]
@@ -436,11 +436,15 @@ mt = {
     end
 
     local lines = {}
+    lines[#lines+1] = 'local function buildTable()'
     lines[#lines+1] = buildRefers(0)
     lines[#lines+1] = buildLinks(0)
     lines[#lines+1] = buildProtos(0)
     lines[#lines+1] = buildMetaTable(0)
     lines[#lines+1] = 'return refers[1]'
+    lines[#lines+1] = 'end'
+    lines[#lines+1] = 'local dump = string.dump(buildTable, true)'
+    lines[#lines+1] = 'return assert((loadstring or load)(dump))()'
     lines[#lines+1] = ''
     return table.concat(lines, '\n')
 end
