@@ -58,49 +58,42 @@ local function makeMiniInfo(t)
     ---@class minitable.info
     local info = {
         keys   = {},
-        cvs    = {},
-        tvs    = {},
+        values = {},
+        refmap = {},
         refers = {},
         protos = {},
     }
-    local mark = {}
     local queue = {t}
     local index = 1
     info.refers[index] = t
-    mark[t] = index
+    info.refmap[t] = index
     while #queue > 0 do
         local current = queue[#queue]
         queue[#queue] = nil
 
         -- 把对象的所有 key 都找出，并按照固定顺序来保存
-        local myIndex = mark[current]
-        local keys = {}
+        local myIndex = info.refmap[current]
+        local keys   = {}
+        local values = {}
         for k in pairs(current) do
             keys[#keys+1] = k
         end
         table.sort(keys)
         info.keys[myIndex] = keys
+        info.values[myIndex] = values
 
         -- 以key的顺序来遍历值
         for i = 1, #keys do
             local k = keys[i]
             local v = current[k]
+            values[i] = v
             if type(v) == 'table' then
-                if not info.tvs[myIndex] then
-                    info.tvs[myIndex] = {}
-                end
-                if not mark[v] then
+                if not info.refmap[v] then
                     index = index + 1
-                    mark[v] = index
-                    queue[#queue+1] = v
+                    info.refmap[v] = index
                     info.refers[index] = v
+                    queue[#queue+1] = v
                 end
-                info.tvs[myIndex][i] = mark[v]
-            else
-                if not info.cvs[myIndex] then
-                    info.cvs[myIndex] = {}
-                end
-                info.cvs[myIndex][i] = v
             end
         end
     end
@@ -120,16 +113,17 @@ local function miniBySameTable(info)
         if not keys then
             return ''
         end
-        local cvs  = info.cvs[i]
-        local tvs  = info.tvs[i]
+        local values = info.values[i]
         local buf  = {}
         for x, k in ipairs(keys) do
             buf[#buf+1] = k
-            if tvs and tvs[x] then
-                buf[#buf+1] = tvs[x]
-            elseif cvs then
-                buf[#buf+1] = type(cvs[x])
-                buf[#buf+1] = tostring(cvs[x])
+            local v = values[x]
+            local ref = info.refmap[v]
+            if ref then
+                buf[#buf+1] = ref
+            else
+                buf[#buf+1] = type(v)
+                buf[#buf+1] = tostring(v)
             end
         end
         tokenCache[i] = table.concat(buf)
@@ -146,8 +140,7 @@ local function miniBySameTable(info)
                 if tokens[token] then
                     links[i] = tokens[token]
                     info.keys[i] = nil
-                    info.cvs[i]  = nil
-                    info.tvs[i]  = nil
+                    info.values[i]  = nil
                     tokenCache[i] = ''
                 else
                     tokens[token] = i
@@ -162,10 +155,11 @@ local function miniBySameTable(info)
         --print('第', _, '次', next(links))
 
         -- 遍历tvs，把引用改过去
-        for i, tvs in pairs(info.tvs) do
-            for k, j in pairs(tvs) do
-                if links[j] then
-                    tvs[k] = links[j]
+        for i, values in pairs(info.values) do
+            for j, v in pairs(values) do
+                local ref = info.refmap[v]
+                if links[ref] then
+                    values[j] = info.refers[links[ref]]
                     tokenCache[i] = nil
                 end
             end
@@ -185,7 +179,7 @@ local function miniBySameTemplate(info)
     end
 
     local function makeBestTemplate(protos)
-        
+
     end
 
     -- 找出使用同一个meta的对象
@@ -244,7 +238,7 @@ function m.mini(t, level)
         miniBySameTable(info)
     end
     if level >= 2 then
-        miniBySameTemplate(info)
+        --miniBySameTemplate(info)
     end
     return info
 end
@@ -260,14 +254,9 @@ function m.build(info)
         local t    = tables[i]
         local keys = info.keys[i]
         if keys then
-            local cvs  = info.cvs[i]
-            local tvs  = info.tvs[i]
+            local values = info.values[i]
             for x, k in ipairs(keys) do
-                if tvs and tvs[x] then
-                    t[k] = tables[tvs[x]]
-                elseif cvs then
-                    t[k] = cvs[x]
-                end
+                t[k] = values[x]
             end
         end
     end
@@ -283,13 +272,11 @@ function m.dump(info)
             return nil
         end
         local lines = {}
-        local cvs = info.cvs[index]
-        if not cvs then
-            return '{}'
-        end
+        local values = info.values[index]
         for i, k in ipairs(keys) do
-            if cvs[i] ~= nil then
-                lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(cvs[i]))
+            local v = values[i]
+            if not info.refmap[v] then
+                lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(v))
             end
         end
         if #lines == 0 then
@@ -317,15 +304,14 @@ function m.dump(info)
         local lines = {}
         lines[#lines+1] = 'local current'
         for i in ipairs(info.refers) do
-            local keys = info.keys[i]
-            local tvs  = info.tvs[i]
-            if keys and tvs then
-                if next(tvs) then
-                    lines[#lines+1] = ('current = refers[%d]'):format(i)
-                    for j, k in ipairs(keys) do
-                        if tvs[j] then
-                            lines[#lines+1] = ('current%s = refers[%d]'):format(formatKey(k, true), formatValue(tvs[j]))
-                        end
+            local keys   = info.keys[i]
+            local values = info.values[i]
+            if keys then
+                lines[#lines+1] = ('current = refers[%d]'):format(i)
+                for j, k in ipairs(keys) do
+                    local v = values[j]
+                    if info.refmap[v] then
+                        lines[#lines+1] = ('current%s = refers[%d]'):format(formatKey(k, true), formatValue(info.refmap[v]))
                     end
                 end
             end
