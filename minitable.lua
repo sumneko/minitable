@@ -258,7 +258,7 @@ end
 
 ---尝试压缩一张表（内存方面）
 ---@param t     table
----@param level integer --压缩等级
+---@param level integer | '0' | '1' | '2' --压缩等级
 ---@return minitable.info
 function m.mini(t, level)
     local info = makeMiniInfo(t)
@@ -303,6 +303,7 @@ end
 
 ---通过表的信息构生成一段代码，执行这段代码可以构建回表
 ---@param info minitable.info
+---@return string
 function m.dump(info)
     local function buildCommon(tab, index)
         local keys = info.keys[index]
@@ -451,6 +452,7 @@ end
 
 ---通过表的信息构建回表
 ---@param info minitable.info
+---@return table
 function m.build(info)
     local dump = m.dump(info)
     return assert((loadstring or load)(dump))()
