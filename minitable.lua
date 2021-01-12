@@ -444,8 +444,7 @@ mt = {
     lines[#lines+1] = buildMetaTable(0)
     lines[#lines+1] = 'return refers[1]'
     lines[#lines+1] = 'end'
-    lines[#lines+1] = 'local dump = string.dump(buildTable, true)'
-    lines[#lines+1] = 'return assert((loadstring or load)(dump))()'
+    lines[#lines+1] = 'return buildTable()'
     lines[#lines+1] = ''
     return table.concat(lines, '\n')
 end

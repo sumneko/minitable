@@ -28,9 +28,9 @@ The following is my test result of an automatically generated data table.
 
 | mini level | Lua 5.1 | Lua 5.2 | Lua 5.3 | Lua 5.4 |
 | ---------- | ------- | ------- | ------- | ------- |
-| 0          |  55.1m  |  52.5m  |  44.7m  |  36.9m  |
-| 1          |  25.6m  |  24.4m  |  20.7m  |  17.0m  |
-| 2          |  16.2m  |  15.2m  |  13.3m  |  11.4m  |
+| 0          |  54.1m  |  52.5m  |  44.7m  |  36.9m  |
+| 1          |  25.0m  |  24.4m  |  20.7m  |  17.0m  |
+| 2          |  15.7m  |  15.2m  |  13.3m  |  11.4m  |
 
 > Full GC
 
