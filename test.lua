@@ -95,6 +95,11 @@ if not util.equal(new2, new) then
     print('不相等 #32!')
 end
 
+local clock10 = os.clock()
+mini.dump(mini.mini(tables, 2))
+local clock11 = os.clock()
+print('耗时', clock11 - clock10)
+
 script = nil
 tables = nil
 info = nil
