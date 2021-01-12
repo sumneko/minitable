@@ -214,7 +214,12 @@ local function miniBySameTemplate(info)
             for _, ci in ipairs(protos) do
                 local values = info.values[ci]
                 local v = values[k]
-                votes[v] = (votes[v] or 0) + 1
+                if v == nil
+                or v == nan
+                or v ~= v then
+                else
+                    votes[v] = (votes[v] or 0) + 1
+                end
             end
             local bestValue = getBestValueByVotes(votes)
             template[k] = bestValue
