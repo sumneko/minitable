@@ -409,6 +409,8 @@ function m.dump(info)
     local function buildMetaTable(tab)
         local lines = {}
 
+        lines[#lines+1] = 'local setmetatable = setmetatable'
+        lines[#lines+1] = 'local next = next'
         lines[#lines+1] = 'local mt'
         for i, proto in ipairs(info.protos) do
             if proto.template then
