@@ -10,7 +10,7 @@ local newTable = minitable.build(info)
 
 -- Create a script, loading this script to create a compressed table
 local dump = minitable.dump(info)
-local newTbale = load(dump)
+local newTbale = load(dump)()
 ```
 
 ## mini level
