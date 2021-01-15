@@ -426,10 +426,21 @@ mt = {
         return %d
     end,
     __pairs = function (self)
+        local proto = protos[%d]
         return function (t, k)
-            local nk = next(protos[%d], k)
+            local nk = next(proto, k)
             return nk, t[nk]
         end, self, nil
+    end,
+    __ipairs = function (self)
+        return function (t, i)
+            i = i + 1
+            local v = t[i]
+            if v == nil then
+                return nil
+            end
+            return i, v
+        end, self, 0
     end,
 }]]):format(i, #proto.template, i)
                 for _, ci in ipairs(proto) do
