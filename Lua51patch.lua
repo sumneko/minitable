@@ -1,5 +1,6 @@
 local ipairs       = ipairs
 local getmetatable = getmetatable
+local type         = type
 
 local m = {}
 
