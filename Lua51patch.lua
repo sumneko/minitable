@@ -1,4 +1,5 @@
 local ipairs       = ipairs
+local pairs        = pairs
 local getmetatable = getmetatable
 local type         = type
 
@@ -13,6 +14,18 @@ function m.ipairs(t)
         return mt.__ipairs(t)
     else
         return ipairs(t)
+    end
+end
+
+---
+---@param t table
+---@return function
+function m.pairs(t)
+    local mt = getmetatable(t)
+    if mt and mt.__pairs then
+        return mt.__pairs(t)
+    else
+        return pairs(t)
     end
 end
 
