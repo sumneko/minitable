@@ -96,7 +96,7 @@ if not util.equal(new2, new) then
 end
 
 local clock10 = os.clock()
-mini.dump(mini.mini(tables, 2))
+mini.dump(mini.mini(tables, 1))
 local clock11 = os.clock()
 print('耗时', clock11 - clock10)
 

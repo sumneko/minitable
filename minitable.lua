@@ -334,13 +334,12 @@ function m.dump(info)
 
     local function buildRefers(tab)
         local lines = {}
-        lines[#lines+1] = 'local refers = {'
+        lines[#lines+1] = 'local refers = {}'
         for i in ipairs(info.values) do
             if info.keys[i] then
-                lines[#lines+1] = ('%s[%d] = %s,'):format(TAB[tab + 4], i, buildCommon(tab + 4, i))
+                lines[#lines+1] = ('refers[%d] = %s'):format(i, buildCommon(tab, i))
             end
         end
-        lines[#lines+1] = '}'
         return table.concat(lines, '\n')
     end
 
