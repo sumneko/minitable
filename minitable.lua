@@ -2,6 +2,12 @@ local m = {}
 
 local inf          = 1 / 0
 local nan          = 0 / 0
+local lua51max     = 2 ^ 16
+
+local function getIndex(index)
+    local a, b = index // lua51max, index % lua51max
+    return ('[%d][%d]'):format(a, b)
+end
 
 local function isInteger(n)
     if math.type then
@@ -335,9 +341,12 @@ function m.dump(info)
     local function buildRefers(tab)
         local lines = {}
         lines[#lines+1] = 'local refers = {}'
+        for i = 0, #info.values // lua51max do
+            lines[#lines+1] = ('refers[%d] = {}'):format(i)
+        end
         for i in ipairs(info.values) do
             if info.keys[i] then
-                lines[#lines+1] = ('refers[%d] = %s'):format(i, buildCommon(tab, i))
+                lines[#lines+1] = ('refers%s = %s'):format(getIndex(i), buildCommon(tab, i))
             end
         end
         return table.concat(lines, '\n')
@@ -356,9 +365,9 @@ function m.dump(info)
                     if info.refmap[v] then
                         if not hasCurrent then
                             hasCurrent = true
-                            lines[#lines+1] = ('current = refers[%d]'):format(i)
+                            lines[#lines+1] = ('current = refers%s'):format(getIndex(i))
                         end
-                        lines[#lines+1] = ('current%s = refers[%d]'):format(formatKey(k, true), formatValue(info.refmap[v]))
+                        lines[#lines+1] = ('current%s = refers%s'):format(formatKey(k, true), getIndex(formatValue(info.refmap[v])))
                     end
                 end
             end
@@ -377,7 +386,7 @@ function m.dump(info)
         for _, k in ipairs(keys) do
             local v = template[k]
             if info.refmap[v] then
-                lines[#lines+1] = ('%s%s = refers[%d],'):format(TAB[tab + 4], formatKey(k), info.refmap[v])
+                lines[#lines+1] = ('%s%s = refers%s,'):format(TAB[tab + 4], formatKey(k), getIndex(info.refmap[v]))
             else
                 lines[#lines+1] = ('%s%s = %s,'):format(TAB[tab + 4], formatKey(k), formatValue(v))
             end
@@ -444,7 +453,7 @@ mt = {
 }]]):format(i, #proto.template, i)
                 for _, ci in ipairs(proto) do
                     if proto.template ~= info.values[ci] then
-                        lines[#lines+1] = ('setmetatable(refers[%d], mt)'):format(ci)
+                        lines[#lines+1] = ('setmetatable(refers%s, mt)'):format(getIndex(ci))
                     end
                 end
             end
@@ -459,7 +468,7 @@ mt = {
     lines[#lines+1] = buildLinks(0)
     lines[#lines+1] = buildProtos(0)
     lines[#lines+1] = buildMetaTable(0)
-    lines[#lines+1] = 'return refers[1]'
+    lines[#lines+1] = 'return refers[0][1]'
     lines[#lines+1] = 'end'
     lines[#lines+1] = 'return buildTable()'
     lines[#lines+1] = ''
