@@ -192,18 +192,24 @@ end
 --- 递归判断A与B是否相等
 ---@param a any
 ---@param b any
+---@param lock? table
 ---@return boolean
-function m.equal(a, b)
+function m.equal(a, b, lock)
     local tp1 = type(a)
     local tp2 = type(b)
     if tp1 ~= tp2 then
         return false
     end
     if tp1 == 'table' then
+        lock = lock or {}
+        if lock[a] then
+            return true
+        end
+        lock[a] = true
         local mark = {}
         for k, v in pairs(a) do
             mark[k] = true
-            local res = m.equal(v, b[k])
+            local res = m.equal(v, b[k], lock)
             if not res then
                 return false
             end
