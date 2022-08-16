@@ -62,4 +62,8 @@ f1.x = f2
 local f0 = lazy.build(f1):exclude(f2):entry()
 assert(util.equal(f1, f0))
 
+local g1 = { 1, function() end }
+local g0 = lazy.build(g1):entry()
+assert(util.equal(g1, g0))
+
 print('测试通过')

@@ -1,7 +1,7 @@
 ---@class lazytable.builder
 ---@field source     table
 ---@field codeMap    table<integer, string>
----@field unpackMark table<table, integer>
+---@field dumpMark   table<table, integer>
 ---@field keyMap     table<integer, string|integer>
 ---@field keyDual    table<string|integer, integer>
 ---@field excludes   table<table, true>
@@ -51,16 +51,17 @@ function mt:formatValue(v)
     return ('%q'):format(v)
 end
 
----@param t table
+---@param t table|function|userdata|thread
 ---@return integer
 function mt:dump(t)
-    if self.unpackMark[t] then
-        return self.unpackMark[t]
+    if self.dumpMark[t] then
+        return self.dumpMark[t]
     end
     local id = self.tableID
     self.tableID = self.tableID + 1
-    self.unpackMark[t] = id
-    if self.excludes[t] then
+    self.dumpMark[t] = id
+    if self.excludes[t] or type(t) ~= 'table' then
+        self.excludes[t] = true
         return id
     end
 
@@ -70,9 +71,8 @@ function mt:dump(t)
     codeBuf[#codeBuf + 1] = 'return{{'
     local hasFields
     for k, v in pairs(t) do
-        if type(v) == 'table' then
-            hasTable = true
-        else
+        local tp = type(v)
+        if tp == 'string' or tp == 'number' or tp == 'boolean' then
             if hasFields then
                 codeBuf[#codeBuf + 1] = ','
             else
@@ -82,6 +82,8 @@ function mt:dump(t)
                 , self:formatKey(k)
                 , self:formatValue(v)
             )
+        else
+            hasTable = true
         end
     end
     codeBuf[#codeBuf+1] = '},'
@@ -92,7 +94,8 @@ function mt:dump(t)
         codeBuf[#codeBuf + 1] = ',{'
         hasFields = false
         for k, v in pairs(t) do
-            if type(v) == 'table' then
+            local tp = type(v)
+            if tp == 'table' or tp == 'function' or tp == 'thread' or tp == 'userdata' then
                 if hasFields then
                     codeBuf[#codeBuf + 1] = ','
                 else
@@ -252,7 +255,7 @@ function mt:entry()
     })
 
     for t in pairs(self.excludes) do
-        local id = self.unpackMark[t]
+        local id = self.dumpMark[t]
         refMap[t] = true
         instMap[id] = t
     end
@@ -273,7 +276,7 @@ function m.build(t, writter, reader)
     local builder = setmetatable({
         source     = t,
         codeMap    = {},
-        unpackMark = {},
+        dumpMark   = {},
         keyMap     = {},
         keyDual    = {},
         excludes   = {},
