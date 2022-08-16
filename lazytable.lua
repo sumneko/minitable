@@ -3,7 +3,7 @@
 ---@field codeMap    table<integer, string>
 ---@field dumpMark   table<table, integer>
 ---@field excludes   table<table, true>
----@field refMap     table<any, true>
+---@field refMap     table<any, integer>
 ---@field instMap    table<integer, table|function|thread|userdata>
 local mt = {}
 mt.__index = mt
@@ -39,7 +39,7 @@ local RESERVED = {
 
 ---@param k string|integer
 ---@return string
-function mt:formatKey(k)
+local function formatKey(k)
     if type(k) == 'string' then
         if not RESERVED[k] and k:match '^[%a_][%w_]*$' then
             return k
@@ -70,7 +70,7 @@ function mt:formatKey(k)
 end
 
 ---@param v string|number|boolean
-function mt:formatValue(v)
+local function formatValue(v)
     if type(v) == 'string' then
         return ('%q'):format(v)
     end
@@ -96,6 +96,50 @@ function mt:formatValue(v)
     return ('%q'):format(v)
 end
 
+---@param info {[1]: table, [2]: integer, [3]: table?}
+---@return string
+local function dump(info)
+    local codeBuf = {}
+
+    codeBuf[#codeBuf + 1] = 'return{{'
+    local hasFields
+    for k, v in pairs(info[1]) do
+        if hasFields then
+            codeBuf[#codeBuf + 1] = ','
+        else
+            hasFields = true
+        end
+        codeBuf[#codeBuf+1] = string.format('%s=%s'
+            , formatKey(k)
+            , formatValue(v)
+        )
+    end
+    codeBuf[#codeBuf+1] = '}'
+
+    codeBuf[#codeBuf+1] = string.format(',%d', formatValue(info[2]))
+
+    if info[3] then
+        codeBuf[#codeBuf+1] = ',{'
+        hasFields = false
+        for k, v in pairs(info[3]) do
+            if hasFields then
+                codeBuf[#codeBuf+1] = ','
+            else
+                hasFields = true
+            end
+            codeBuf[#codeBuf+1] = string.format('%s=%s'
+                , formatKey(k)
+                , formatValue(v)
+            )
+        end
+        codeBuf[#codeBuf+1] = '}'
+    end
+
+    codeBuf[#codeBuf + 1] = '}'
+
+    return table.concat(codeBuf)
+end
+
 ---@param obj table|function|userdata|thread
 ---@return integer
 function mt:getObjectID(obj)
@@ -106,7 +150,7 @@ function mt:getObjectID(obj)
     self.tableID = self.tableID + 1
     self.dumpMark[obj] = id
     if self.excludes[obj] or type(obj) ~= 'table' then
-        self.refMap[obj] = true
+        self.refMap[obj] = id
         self.instMap[id] = obj
         return id
     end
@@ -125,54 +169,10 @@ function mt:getObjectID(obj)
         end
     end
 
-    local code = self:dump({fields, #obj, objs})
+    local code = dump({fields, #obj, objs})
 
     self.codeMap[id] = code
     return id
-end
-
----@param info {[1]: table, [2]: integer, [3]: table?}
----@return string
-function mt:dump(info)
-    local codeBuf = {}
-
-    codeBuf[#codeBuf + 1] = 'return{{'
-    local hasFields
-    for k, v in pairs(info[1]) do
-        if hasFields then
-            codeBuf[#codeBuf + 1] = ','
-        else
-            hasFields = true
-        end
-        codeBuf[#codeBuf+1] = string.format('%s=%s'
-            , self:formatKey(k)
-            , self:formatValue(v)
-        )
-    end
-    codeBuf[#codeBuf+1] = '}'
-
-    codeBuf[#codeBuf+1] = string.format(',%d', self:formatValue(info[2]))
-
-    if info[3] then
-        codeBuf[#codeBuf+1] = ',{'
-        hasFields = false
-        for k, v in pairs(info[3]) do
-            if hasFields then
-                codeBuf[#codeBuf+1] = ','
-            else
-                hasFields = true
-            end
-            codeBuf[#codeBuf+1] = string.format('%s=%s'
-                , self:formatKey(k)
-                , self:formatValue(v)
-            )
-        end
-        codeBuf[#codeBuf+1] = '}'
-    end
-
-    codeBuf[#codeBuf + 1] = '}'
-
-    return table.concat(codeBuf)
 end
 
 ---@param writter fun(id: integer, code: string): boolean
@@ -206,8 +206,10 @@ function mt:entry()
     local instMap = self.instMap
     local load    = load
     local setmt   = setmetatable
-    local dump    = string.dump
+    local sdump   = string.dump
+    local type    = type
     local sbyte   = string.byte
+    local tableID = self.tableID
     ---@type table<table, integer>
     local idMap   = {}
     ---@type table<table, table[]>
@@ -224,7 +226,7 @@ function mt:entry()
                 return nil
             end
             if sbyte(code, 1, 1) ~= 27 then
-                codeMap[id] = dump(f, true)
+                codeMap[id] = sdump(f, true)
             end
             local info = f()
             map[t] = info
@@ -261,8 +263,38 @@ function mt:entry()
             return instMap[ref]
         end,
         __newindex = function(t, k, v)
-            rawset(t, k, v)
-            refMap[t] = true
+            local info = infoMap[t]
+            if not info then
+                return
+            end
+            local fields = info[1]
+            local objs   = info[3]
+            fields[k]    = nil
+            if objs then
+                objs[k] = nil
+            end
+            if v ~= nil then
+                local tp = type(v)
+                if tp == 'string' or tp == 'number' or tp == 'boolean' then
+                    fields[k] = v
+                else
+                    if not objs then
+                        objs = {}
+                    end
+                    local id = refMap[v]
+                    if not id then
+                        id = tableID
+                        refMap[v] = id -- 新赋值的对象一定会被引用住
+                        instMap[id] = v
+                        tableID = tableID + 1
+                    end
+                    objs[k] = tableID
+                end
+            end
+            info = { fields, info[2], objs }
+            local id = idMap[t]
+            local code = dump(info)
+            codeMap[id] = code
         end,
         __len = function (t)
             local info = infoMap[t]

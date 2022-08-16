@@ -46,6 +46,8 @@ local mem3 = collectgarbage 'count'
 for i = 1, 1000 do
     e0['xxx' .. i]['x'] = true
 end
+collectgarbage()
+collectgarbage()
 local mem4 = collectgarbage 'count'
 
 print(mem2 - mem1, mem3 - mem2, mem4 - mem3)
