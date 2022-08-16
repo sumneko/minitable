@@ -116,10 +116,12 @@ function mt:entry(entryID)
     local load    = load
     local setmt   = setmetatable
     local dump    = string.dump
+    local rawset  = rawset
     ---@type table<table, integer>
     local idMap   = {}
     ---@type table<integer, table>
     local instMap = {}
+    local refMap  = {}
     ---@type table<table, table[]>
     local infoMap = setmt({}, {
         __mode = 'v',
@@ -160,6 +162,10 @@ function mt:entry(entryID)
 
             return instMap[ref]
         end,
+        __newindex = function(t, k, v)
+            rawset(t, k, v)
+            refMap[t] = true
+        end,
         __len = function (t)
             local info = infoMap[t]
             return info[2]
@@ -186,13 +192,18 @@ function mt:entry(entryID)
         end
     }
 
-    setmetatable(instMap, { __index = function (map, id)
-        local inst  = {}
-        idMap[inst] = id
-        map[id]     = inst
+    setmetatable(idMap, { __mode = 'k' })
 
-        return setmt(inst, lazyload)
-    end })
+    setmetatable(instMap, {
+        __mode  = 'v',
+        __index = function (map, id)
+            local inst  = {}
+            idMap[inst] = id
+            map[id]     = inst
+
+            return setmt(inst, lazyload)
+        end,
+    })
 
     local entry = instMap[entryID]
 
