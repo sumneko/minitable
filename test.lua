@@ -100,11 +100,13 @@ mini.dump(mini.mini(tables, 1))
 local clock11 = os.clock()
 print('耗时', clock11 - clock10)
 
+---@diagnostic disable: cast-local-type
 script = nil
 tables = nil
 info = nil
 new = nil
 --new2 = nil
+---@diagnostic enable: cast-local-type
 
 collectgarbage()
 collectgarbage()

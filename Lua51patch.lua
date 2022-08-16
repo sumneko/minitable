@@ -7,7 +7,7 @@ local m = {}
 
 ---
 ---@param t table
----@return function
+---@return function, any, integer
 function m.ipairs(t)
     local mt = getmetatable(t)
     if mt and mt.__ipairs then
@@ -19,7 +19,7 @@ end
 
 ---
 ---@param t table
----@return function
+---@return function, any, any
 function m.pairs(t)
     local mt = getmetatable(t)
     if mt and mt.__pairs then
