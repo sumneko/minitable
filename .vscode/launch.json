@@ -7,9 +7,16 @@
         {
             "type": "lua",
             "request": "launch",
-            "name": "Debug",
-            "program": "${workspaceFolder}/test.lua",
+            "name": "test-minitable",
+            "program": "${workspaceFolder}/test-minitable.lua",
             "luaVersion": "5.4"
-        }
+        },
+        {
+            "type": "lua",
+            "request": "launch",
+            "name": "test-lazytable",
+            "program": "${workspaceFolder}/test-lazytable.lua",
+            "luaVersion": "5.4"
+        },
     ]
 }

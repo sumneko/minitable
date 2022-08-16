@@ -1,3 +1,4 @@
+---@class minitable
 local m = {}
 
 local inf          = 1 / 0
