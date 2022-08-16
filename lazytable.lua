@@ -5,6 +5,8 @@
 ---@field keyMap     table<integer, string|integer>
 ---@field keyDual    table<string|integer, integer>
 ---@field excludes   table<table, true>
+---@field refMap     table<any, true>
+---@field instMap    table<integer, table|function|thread|userdata>
 local mt = {}
 mt.__index = mt
 mt.tableID = 1
@@ -51,26 +53,33 @@ function mt:formatValue(v)
     return ('%q'):format(v)
 end
 
----@param t table|function|userdata|thread
+---@param obj table|function|userdata|thread
 ---@return integer
-function mt:dump(t)
-    if self.dumpMark[t] then
-        return self.dumpMark[t]
+function mt:getObjectID(obj)
+    if self.dumpMark[obj] then
+        return self.dumpMark[obj]
     end
     local id = self.tableID
     self.tableID = self.tableID + 1
-    self.dumpMark[t] = id
-    if self.excludes[t] or type(t) ~= 'table' then
-        self.excludes[t] = true
+    self.dumpMark[obj] = id
+    if self.excludes[obj] or type(obj) ~= 'table' then
+        self.refMap[obj] = true
+        self.instMap[id] = obj
         return id
     end
+    self:dump(obj, id)
+    return id
+end
 
+---@param obj table|function|userdata|thread
+---@param id integer
+function mt:dump(obj, id)
     local codeBuf = {}
 
     local hasTable
     codeBuf[#codeBuf + 1] = 'return{{'
     local hasFields
-    for k, v in pairs(t) do
+    for k, v in pairs(obj) do
         local tp = type(v)
         if tp == 'string' or tp == 'number' or tp == 'boolean' then
             if hasFields then
@@ -88,12 +97,12 @@ function mt:dump(t)
     end
     codeBuf[#codeBuf+1] = '},'
 
-    codeBuf[#codeBuf+1] = string.format('%d', self:formatValue(#t))
+    codeBuf[#codeBuf+1] = string.format('%d', self:formatValue(#obj))
 
     if hasTable then
         codeBuf[#codeBuf + 1] = ',{'
         hasFields = false
-        for k, v in pairs(t) do
+        for k, v in pairs(obj) do
             local tp = type(v)
             if tp == 'table' or tp == 'function' or tp == 'thread' or tp == 'userdata' then
                 if hasFields then
@@ -103,7 +112,7 @@ function mt:dump(t)
                 end
                 codeBuf[#codeBuf + 1] = string.format('%s=%s'
                     , self:formatKey(k)
-                    , self:dump(v)
+                    , self:getObjectID(v)
                 )
             end
         end
@@ -113,8 +122,6 @@ function mt:dump(t)
     codeBuf[#codeBuf+1] = '}'
 
     self.codeMap[id] = table.concat(codeBuf)
-
-    return id
 end
 
 ---@param writter fun(id: integer, code: string): boolean
@@ -141,21 +148,19 @@ end
 
 ---@return table
 function mt:entry()
-    local entryID = self:dump(self.source)
+    local entryID = self:getObjectID(self.source)
 
     local codeMap = self.codeMap
     local keyMap  = self.keyMap
     local keyDual = self.keyDual
+    local refMap  = self.refMap
+    local instMap = self.instMap
     local load    = load
     local setmt   = setmetatable
     local dump    = string.dump
-    local rawset  = rawset
     local sbyte   = string.byte
     ---@type table<table, integer>
     local idMap   = {}
-    ---@type table<integer, table>
-    local instMap = {}
-    local refMap  = {}
     ---@type table<table, table[]>
     local infoMap = setmt({}, {
         __mode = 'v',
@@ -179,6 +184,7 @@ function mt:entry()
     })
 
     local lazyload = {
+        ref = refMap,
         __index = function(t, k)
             local info = infoMap[t]
             if not info then
@@ -238,7 +244,7 @@ function mt:entry()
                 local k = keys[i]
                 return k, t[k]
             end
-        end
+        end,
     }
 
     setmetatable(idMap, { __mode = 'k' })
@@ -254,13 +260,7 @@ function mt:entry()
         end,
     })
 
-    for t in pairs(self.excludes) do
-        local id = self.dumpMark[t]
-        refMap[t] = true
-        instMap[id] = t
-    end
-
-    local entry = instMap[entryID]
+    local entry = instMap[entryID] --[[@as table]]
 
     return entry
 end
@@ -276,6 +276,8 @@ function m.build(t, writter, reader)
     local builder = setmetatable({
         source     = t,
         codeMap    = {},
+        refMap     = {},
+        instMap    = {},
         dumpMark   = {},
         keyMap     = {},
         keyDual    = {},
