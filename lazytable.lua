@@ -1,4 +1,5 @@
 ---@class lazytable.builder
+---@field source     table
 ---@field codeMap    table<integer, string>
 ---@field unpackMark table<table, integer>
 ---@field keyMap     table<integer, string|integer>
@@ -137,6 +138,8 @@ end
 
 ---@return table
 function mt:entry()
+    local entryID = self:dump(self.source)
+
     local codeMap = self.codeMap
     local keyMap  = self.keyMap
     local keyDual = self.keyDual
@@ -254,7 +257,7 @@ function mt:entry()
         instMap[id] = t
     end
 
-    local entry = instMap[1]
+    local entry = instMap[entryID]
 
     return entry
 end
@@ -268,6 +271,7 @@ local m = {}
 ---@return lazytable.builder
 function m.build(t, writter, reader)
     local builder = setmetatable({
+        source     = t,
         codeMap    = {},
         unpackMark = {},
         keyMap     = {},
@@ -278,8 +282,6 @@ function m.build(t, writter, reader)
     if writter and reader then
         builder:bind(writter, reader)
     end
-
-    builder:dump(t)
 
     return builder
 end

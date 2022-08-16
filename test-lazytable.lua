@@ -51,9 +51,9 @@ local mem4 = collectgarbage 'count'
 print(mem2 - mem1, mem3 - mem2, mem4 - mem3)
 collectgarbage 'restart'
 
-local writter, reader = cacher('temp/cache', 100)
-assert(cacher)
-e0 = lazy.build(e1, writter, reader):entry()
+local cache = cacher('temp/cache')
+assert(cache)
+e0 = lazy.build(e1, cache.writter, cache.reader):entry()
 assert(#e1 == #e0)
 
 local f1 = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }
