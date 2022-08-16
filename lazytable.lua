@@ -1,8 +1,9 @@
 ---@class lazytable.builder
----@field codeMap table<integer, string>
+---@field codeMap    table<integer, string>
 ---@field unpackMark table<table, integer>
----@field keyMap  table<integer, string|integer>
----@field keyDual table<string|integer, integer>
+---@field keyMap     table<integer, string|integer>
+---@field keyDual    table<string|integer, integer>
+---@field excludes   table<table, true>
 local mt = {}
 mt.__index = mt
 mt.tableID = 1
@@ -58,6 +59,9 @@ function mt:dump(t)
     local id = self.tableID
     self.tableID = self.tableID + 1
     self.unpackMark[t] = id
+    if self.excludes[t] then
+        return id
+    end
 
     local codeBuf = {}
 
@@ -125,9 +129,14 @@ function mt:bind(writter, reader)
     })
 end
 
----@param entryID integer
+---@param t table
+function mt:exclude(t)
+    self.excludes[t] = true
+    return self
+end
+
 ---@return table
-function mt:entry(entryID)
+function mt:entry()
     local codeMap = self.codeMap
     local keyMap  = self.keyMap
     local keyDual = self.keyDual
@@ -239,7 +248,13 @@ function mt:entry(entryID)
         end,
     })
 
-    local entry = instMap[entryID]
+    for t in pairs(self.excludes) do
+        local id = self.unpackMark[t]
+        refMap[t] = true
+        instMap[id] = t
+    end
+
+    local entry = instMap[1]
 
     return entry
 end
@@ -250,24 +265,23 @@ local m = {}
 ---@param t table
 ---@param writter? fun(id: integer, code: string): boolean
 ---@param reader?  fun(id: integer): string?
----@return table
+---@return lazytable.builder
 function m.build(t, writter, reader)
     local builder = setmetatable({
         codeMap    = {},
         unpackMark = {},
         keyMap     = {},
         keyDual    = {},
+        excludes   = {},
     }, mt)
 
     if writter and reader then
         builder:bind(writter, reader)
     end
 
-    local id = builder:dump(t)
+    builder:dump(t)
 
-    local entry = builder:entry(id)
-
-    return entry
+    return builder
 end
 
 return m

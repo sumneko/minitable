@@ -5,7 +5,7 @@ local cacher= require 'lazy-cacher'
 local sp = require 'bee.subprocess'
 
 local a1 = { x = 1, y = 2, z = 3 }
-local a0 = lazy.build(a1)
+local a0 = lazy.build(a1):entry()
 
 assert(util.equal(a1, a0))
 
@@ -15,15 +15,15 @@ b1[1]  = b2
 b1[2]  = b1
 b1[3]  = 'xxx'
 b2[10] = b1
-local b0 = lazy.build(b1)
+local b0 = lazy.build(b1):entry()
 assert(util.equal(b1, b0))
 
 local c1 = { ['if'] = 1 }
-local c0 = lazy.build(c1)
+local c0 = lazy.build(c1):entry()
 assert(util.equal(c1, c0))
 
 local d1 = {1, 2, 3, 4, 5, 6, 7, 8, 9}
-local d0 = lazy.build(d1)
+local d0 = lazy.build(d1):entry()
 assert(#d1 == #d0)
 
 collectgarbage 'stop'
@@ -39,7 +39,7 @@ end
 collectgarbage()
 collectgarbage()
 local mem2 = collectgarbage 'count'
-local e0 = lazy.build(e1)
+local e0 = lazy.build(e1):entry()
 collectgarbage()
 collectgarbage()
 local mem3 = collectgarbage 'count'
@@ -53,7 +53,13 @@ collectgarbage 'restart'
 
 local writter, reader = cacher('temp/cache', 100)
 assert(cacher)
-e0 = lazy.build(e1, writter, reader)
+e0 = lazy.build(e1, writter, reader):entry()
 assert(#e1 == #e0)
+
+local f1 = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }
+local f2 = { 'xx' }
+f1.x = f2
+local f0 = lazy.build(f1):exclude(f2):entry()
+assert(util.equal(f1, f0))
 
 print('测试通过')
