@@ -55,7 +55,7 @@ return function (path, errorHandle)
         end,
         dispose = function ()
             f:close()
-            fs.remove(path)
+            fs.remove(fs.path(path))
         end,
     }
 end
