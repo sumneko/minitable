@@ -8,6 +8,8 @@ mt.__index = mt
 mt.tableID = 1
 mt.keyID   = 1
 
+local DUMMY = function () end
+
 ---@param k string|integer
 ---@return string
 function mt:formatKey(k)
@@ -107,6 +109,22 @@ function mt:dump(t)
     return id
 end
 
+---@param writter fun(id: integer, code: string): boolean
+---@param reader  fun(id: integer): string?
+function mt:bind(writter, reader)
+    setmetatable(self.codeMap, {
+        __newindex = function (t, id, code)
+            local suc = writter(id, code)
+            if not suc then
+                rawset(t, id, code)
+            end
+        end,
+        __index = function (_, id)
+            return reader(id)
+        end
+    })
+end
+
 ---@param entryID integer
 ---@return table
 function mt:entry(entryID)
@@ -117,6 +135,7 @@ function mt:entry(entryID)
     local setmt   = setmetatable
     local dump    = string.dump
     local rawset  = rawset
+    local sbyte   = string.byte
     ---@type table<table, integer>
     local idMap   = {}
     ---@type table<integer, table>
@@ -128,19 +147,28 @@ function mt:entry(entryID)
         __index = function (map, t)
             local id   = idMap[t]
             local code = codeMap[id]
-            local f    = load(code)
-            ---@cast f -?
-            codeMap[id] = dump(f, true)
-            ---@type table[]
+            if not code then
+                return nil
+            end
+            local f = load(code)
+            if not f then
+                return nil
+            end
+            if sbyte(code, 1, 1) ~= 27 then
+                codeMap[id] = dump(f, true)
+            end
             local info = f()
-            map[t]     = info
+            map[t] = info
             return info
         end
     })
 
     local lazyload = {
         __index = function(t, k)
-            local info   = infoMap[t]
+            local info = infoMap[t]
+            if not info then
+                return nil
+            end
             local fields = info[1]
 
             local keyID = keyDual[k]
@@ -168,10 +196,16 @@ function mt:entry(entryID)
         end,
         __len = function (t)
             local info = infoMap[t]
+            if not info then
+                return 0
+            end
             return info[2]
         end,
         __pairs = function (t)
-            local info   = infoMap[t]
+            local info = infoMap[t]
+            if not info then
+                return DUMMY
+            end
             local fields = info[1]
             local refs   = info[3]
             local keys   = {}
@@ -214,14 +248,20 @@ end
 local m = {}
 
 ---@param t table
+---@param writter? fun(id: integer, code: string): boolean
+---@param reader?  fun(id: integer): string?
 ---@return table
-function m.build(t)
+function m.build(t, writter, reader)
     local builder = setmetatable({
         codeMap    = {},
         unpackMark = {},
         keyMap     = {},
         keyDual    = {},
     }, mt)
+
+    if writter and reader then
+        builder:bind(writter, reader)
+    end
 
     local id = builder:dump(t)
 

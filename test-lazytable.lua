@@ -1,5 +1,7 @@
-local lazy = require 'lazytable'
-local util = require 'utility'
+local lazy  = require 'lazytable'
+local util  = require 'utility'
+local fs    = require 'bee.filesystem'
+local cacher= require 'lazy-cacher'
 
 local a1 = { x = 1, y = 2, z = 3 }
 local a0 = lazy.build(a1)
@@ -46,5 +48,11 @@ end
 local mem4 = collectgarbage 'count'
 
 print(mem2 - mem1, mem3 - mem2, mem4 - mem3)
+collectgarbage 'restart'
+
+local writter, reader = cacher('temp/cache', 100)
+assert(cacher)
+e0 = lazy.build(e1, writter, reader)
+assert(#e1 == #e0)
 
 print('测试通过')
