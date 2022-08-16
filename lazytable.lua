@@ -288,13 +288,14 @@ function mt:entry()
                         instMap[id] = v
                         tableID = tableID + 1
                     end
-                    objs[k] = tableID
+                    objs[k] = id
                 end
             end
             info = { fields, info[2], objs }
             local id = idMap[t]
             local code = dump(info)
             codeMap[id] = code
+            infoMap[id] = nil
         end,
         __len = function (t)
             local info = infoMap[t]

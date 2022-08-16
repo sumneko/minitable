@@ -69,7 +69,7 @@ local g0 = lazy.build(g1):entry()
 assert(util.equal(g1, g0))
 
 local h1 = { 1, 2 }
-local h0 = lazy.build(h1):entry()
+local h0 = lazy.build(h1, cache.writter, cache.reader):entry()
 h1.x = 0
 h0.x = 0
 assert(util.equal(h1, h0))
