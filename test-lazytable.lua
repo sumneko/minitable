@@ -2,6 +2,7 @@ local lazy  = require 'lazytable'
 local util  = require 'utility'
 local fs    = require 'bee.filesystem'
 local cacher= require 'lazy-cacher'
+local sp = require 'bee.subprocess'
 
 local a1 = { x = 1, y = 2, z = 3 }
 local a0 = lazy.build(a1)
