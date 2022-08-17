@@ -214,7 +214,7 @@ function mt:entry()
     local sdump   = string.dump
     local type    = type
     local sbyte   = string.byte
-    local rawset  = rawset
+    local tableID = self.tableID
     ---@type table<table, integer>
     local idMap   = {}
     ---@type table<table, table[]>
@@ -283,13 +283,15 @@ function mt:entry()
                 if tp == 'string' or tp == 'number' or tp == 'boolean' then
                     fields[k] = v
                 else
-                    local id = refMap[v]
-                    if not id then
-                        rawset(t, k, v)
-                        return
-                    end
                     if not objs then
                         objs = {}
+                    end
+                    local id = refMap[v]
+                    if not id then
+                        id = tableID
+                        refMap[v] = id -- 新赋值的对象一定会被引用住
+                        instMap[id] = v
+                        tableID = tableID + 1
                     end
                     objs[k] = id
                 end
