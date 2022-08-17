@@ -155,6 +155,10 @@ function mt:getObjectID(obj)
         return id
     end
 
+    if not next(obj) then
+        return id
+    end
+
     local fields = {}
     local objs
     for k, v in pairs(obj) do
