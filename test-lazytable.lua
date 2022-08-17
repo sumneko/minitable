@@ -83,4 +83,8 @@ collectgarbage()
 collectgarbage()
 assert(not next(wt))
 
+local i1 = {}
+local i0 = lazy.build(i1, cache.writter, cache.reader):entry()
+assert(util.equal(i1, i0))
+
 print('测试通过')

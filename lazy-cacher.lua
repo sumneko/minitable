@@ -29,6 +29,11 @@ return function (path, errorHandle)
                 end
                 return false
             end
+            if not code then
+                map[id * 2]     = nil
+                map[id * 2 + 1] = nil
+                return true
+            end
             local suc, err = f:write(code)
             if not suc then
                 if errorHandle then
@@ -43,6 +48,9 @@ return function (path, errorHandle)
         reader = function(id)
             local offset = map[id * 2]
             local len    = map[id * 2 + 1]
+            if not offset then
+                return nil
+            end
             local _, err = f:seek('set', offset)
             if err then
                 if errorHandle then

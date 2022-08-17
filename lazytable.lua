@@ -156,6 +156,7 @@ function mt:getObjectID(obj)
     end
 
     if not next(obj) then
+        self.codeMap[id] = nil
         return id
     end
 
