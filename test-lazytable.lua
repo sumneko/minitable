@@ -2,7 +2,6 @@ local lazy  = require 'lazytable'
 local util  = require 'utility'
 local fs    = require 'bee.filesystem'
 local cacher= require 'lazy-cacher'
-local sp = require 'bee.subprocess'
 
 local a1 = { x = 1, y = 2, z = 3 }
 local a0 = lazy.build(a1):entry()
@@ -53,9 +52,9 @@ local mem4 = collectgarbage 'count'
 print(mem2 - mem1, mem3 - mem2, mem4 - mem3)
 collectgarbage 'restart'
 
-local cache = cacher('temp/cache')
+local cache = cacher('temp')
 assert(cache)
-e0 = lazy.build(e1, cache.writter, cache.reader):entry()
+e0 = lazy.build(e1, cache:writterAndReader 'e'):entry()
 assert(#e1 == #e0)
 
 local f1 = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }
@@ -69,7 +68,7 @@ local g0 = lazy.build(g1):entry()
 assert(util.equal(g1, g0))
 
 local h1 = { 1, 2 }
-local builder = lazy.build(h1, cache.writter, cache.reader)
+local builder = lazy.build(h1, cache:writterAndReader 'h')
 local h0 = builder:entry()
 h1.x = 0
 h0.x = 0
@@ -84,7 +83,7 @@ collectgarbage()
 assert(not next(wt))
 
 local i1 = {}
-local i0 = lazy.build(i1, cache.writter, cache.reader):entry()
+local i0 = lazy.build(i1, cache:writterAndReader 'i'):entry()
 assert(util.equal(i1, i0))
 
 print('测试通过')
