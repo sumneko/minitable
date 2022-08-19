@@ -15,6 +15,12 @@ mt.openingFiles  = {}
 
 mt.errorHandler = function (err) end
 
+function mt:_closeFile(path)
+    self._opening:pop(path)
+    self._openingMap[path]:close()
+    self._openingMap[path] = nil
+end
+
 ---@param path string
 ---@return file*?
 ---@return string? errorMessage
@@ -26,20 +32,38 @@ function mt:_getFile(path)
     end
     local fullPath = self._dir .. '/' .. path
     local file, err = io.open(fullPath, 'a+b')
-    return file, err
+    if not file then
+        return nil, err
+    end
+    self._opening:pushTail(path)
+    self._openingMap[path] = file
+    if self._opening:getSize() > self.maxOpendFiles then
+        local oldest = self._opening:getHead()
+        self:_closeFile(oldest)
+    end
+    return file
 end
 
 ---@param fileID string
 ---@return fun(id: integer, code: string): boolean
 ---@return fun(id: integer): string?
 function mt:writterAndReader(fileID)
-    local file, err = self:_getFile(fileID)
-    if not file then
-        self.errorHandler(err)
-    end
+    local maxFileSize = self.maxFileSize
     local map = {}
-    local function writter (id, code)
+    local function resize()
+        -- TODO
+    end
+    local function writter(id, code)
+        if not code then
+            map[id] = nil
+            return true
+        end
+        if #code > 1000000 then
+            return false
+        end
+        local file, err = self:_getFile(fileID)
         if not file then
+            self.errorHandler(err)
             return false
         end
         local offset, err = file:seek('end')
@@ -47,12 +71,19 @@ function mt:writterAndReader(fileID)
             self.errorHandler(err)
             return false
         end
-        if not code then
-            map[id] = nil
-            return true
-        end
-        if #code > 1000000 then
-            return false
+        if offset > maxFileSize then
+            resize()
+            file, err = self:_getFile(fileID)
+            if not file then
+                self.errorHandler(err)
+                return false
+            end
+            offset, err = file:seek('end')
+            if offset then
+                self.errorHandler(err)
+                return false
+            end
+            maxFileSize = math.max(maxFileSize, (offset + #code) * 2)
         end
         local suc, err = file:write(code)
         if suc then
@@ -63,10 +94,12 @@ function mt:writterAndReader(fileID)
         return true
     end
     local function reader(id)
-        if not file then
+        if not map[id] then
             return nil
         end
-        if not map[id] then
+        local file, err = self:_getFile(fileID)
+        if not file then
+            self.errorHandler(err)
             return nil
         end
         local offset = map[id] // 1000000
